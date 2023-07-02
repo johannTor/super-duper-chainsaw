@@ -1,56 +1,30 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import PropTypes from 'prop-types';
-import { SectionContainer, SectionHeader } from '../components/styles/style';
-import LifeGrid from '../components/game/LifeGrid';
-import Scoreboard from '../components/game/Scoreboard';
-
-function getRandomInt(min, max) {
-  min = Math.ceil(min);
-  max = Math.floor(max);
-  return Math.floor(Math.random() * (max - min) + min); // The maximum is exclusive and the minimum is inclusive
-}
+import { ButtonWrapper, SectionContainer, ToggleButton, GeneralButton, WinnerModal, ModalHeading } from '../components/styles/style';
+import GameView from '../components/game/GridView';
+import { initScores, pushWithMaxLength } from '../utils/helpers';
+import GroupView from '../components/game/GroupView';
+import { useDetermineWinner } from '../hooks/useDetermineWinner';
 
 export default function Game({ gameOptions, setGameOptions }) {
   const { players, lives, order } = gameOptions;
-  // const [gameSquares, setGameSquares] = useState([]); // [{ square: number, lives: number }]
-  const [playerSquares, setPlayerSquares] = useState([]); // [{ player: string, squares: number[] }]
+  const [squareHistory, setSquareHistory] = useState([]); // State that should contain moves which could be fell back on via undo
+  const [playerSquares, setPlayerSquares] = useState([]); // [{ player: string, squares: number[{ square: number, lives: number }] }]
+  const [viewMode, setViewMode] = useState('grid');
+  const modalRef = useRef();
 
   useEffect(() => {
-    const initScores = (order, players, lives) => {
-      const fields = [
-        1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
-        11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
-      ];
-      const fieldsPerPlayer = fields.length / players.length;
-
-      const playerScores = players.map((name, index) => {
-        let playerSquares = []
-        if (order === 'Sequential') {
-          playerSquares = fields.slice(index * fieldsPerPlayer, (index * fieldsPerPlayer) + fieldsPerPlayer).map(item => ({ square: item, lives: lives}));
-        } else if (order === 'Random') {
-          for (let i = 0; i < fieldsPerPlayer; i++) {
-            playerSquares.push({square: fields.splice(getRandomInt(0, fields.length), 1)[0], lives: lives});
-          }
-        }
-        return {
-          player: name,
-          squares: playerSquares,
-        }
-      });
-      return playerScores;
-    };
     const newPlayerSquares = initScores(order, players, lives);
-    console.log('Scores: ', newPlayerSquares);
     setPlayerSquares(newPlayerSquares);
   }, [order, players, lives]);
 
+  const { winner } = useDetermineWinner(playerSquares);
+
   useEffect(() => {
-    const findWinner = (playerSquares) => {
-      // ToDo: filter array for players with squares that have lives remaining
-      // - set gameOptions started to false, init everything, popup the winner name
-    };
-    findWinner(playerSquares)
-  }, [playerSquares]);
+    if(winner) {
+      modalRef.current.showModal();
+    }
+  }, [winner]);
 
   const handleSquareClick = (value) => {
     let foundSquare = null;
@@ -65,6 +39,10 @@ export default function Game({ gameOptions, setGameOptions }) {
       } 
     }
     if (!foundSquare) return undefined;
+    const squareHistoryClone = structuredClone(squareHistory);
+    pushWithMaxLength(squareHistoryClone, playerSquares);
+    // Adding the cloned square state to the history array
+    setSquareHistory(squareHistoryClone);
 
     // Cloning the foundSquare to decrease the life
     const cpySquare = structuredClone(foundSquare);
@@ -78,11 +56,35 @@ export default function Game({ gameOptions, setGameOptions }) {
     setPlayerSquares(newPlayas);
   }
 
+  const handleUndo = () => {
+    if (squareHistory.length <= 0) return;
+    const squareHistoryClone = structuredClone(squareHistory);
+    const lastMove = squareHistoryClone.pop();
+    setSquareHistory(squareHistoryClone);
+    setPlayerSquares(lastMove);
+  }
+
+  const handleRestart = () => {
+    modalRef.current.close();
+    setGameOptions({ started: false, players: [], lives: null, order: '' });
+  }
+
   return (
     <SectionContainer>
-      <SectionHeader>View: Normal</SectionHeader>
-      <LifeGrid gameSquares={playerSquares} totalLives={lives} handleSquareClick={handleSquareClick} />
-      <Scoreboard playerScores={playerSquares} totalLives={lives} />
+      <ButtonWrapper>
+        <ToggleButton type="button" onClick={() => setViewMode('grid')} selected={viewMode === 'grid'}>Grid</ToggleButton>
+        <ToggleButton type="button" onClick={() => setViewMode('groups')} selected={viewMode === 'groups'}>Groups</ToggleButton>
+      </ButtonWrapper>
+      {viewMode === 'grid' ? (
+        <GameView gameSquares={playerSquares} totalLives={lives} handleSquareClick={handleSquareClick} />
+      ) : (
+        <GroupView gameSquares={playerSquares} totalLives={lives} handleSquareClick={handleSquareClick} />
+      )}
+      <GeneralButton disabled={squareHistory.length === 0} onClick={handleUndo}>Undo</GeneralButton>
+      <WinnerModal ref={modalRef}>
+        <ModalHeading>GG {winner}</ModalHeading>
+        <GeneralButton style={{ display: 'block', margin: '0 auto', backgroundColor: 'rgb(150, 150, 150)', color: '#fff' }} onClick={handleRestart}>Restart</GeneralButton>
+      </WinnerModal>
     </SectionContainer>
   )
 }

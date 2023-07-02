@@ -11,7 +11,6 @@ const SquareContainer = styled.div`
   justify-content: center;
   align-items: center;
   cursor: ${({ $dead }) => $dead ? 'default' : 'pointer'};
-  /* visibility: ${({ $invisible }) => $invisible && 'hidden'}; */
 `;
 
 const SquareText = styled.span`

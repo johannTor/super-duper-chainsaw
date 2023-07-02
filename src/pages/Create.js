@@ -14,7 +14,6 @@ const CreateContainer = styled.section`
 `
 
 export default function Create({ setGameOptions }) {
-  // ToDo: Store names in localStorage
   const [playerNames, setPlayerNames] = useState(['', '', '', '']);
   const [lifeCount, setLifeCount] = useState(2);
   const [errorMessage, setErrorMessage] = useState('');
@@ -22,7 +21,6 @@ export default function Create({ setGameOptions }) {
   useEffect(() => {
     const storedPlayers = JSON.parse(localStorage.getItem('dartPlayers'));
     if (storedPlayers) {
-      console.log('Got: ', storedPlayers);
       setPlayerNames(storedPlayers);
     }
   }, []);
@@ -31,7 +29,6 @@ export default function Create({ setGameOptions }) {
     const nameEntries = Object.entries(playerNames);
     const missingNames = nameEntries.filter(item => !item[1]);
     console.log('Missing: ', missingNames);
-    // ToDo: Before starting, save names & ordering into context? 
     if (missingNames.length > 0) setErrorMessage('Missing names');
     else {
       localStorage.setItem('dartPlayers', JSON.stringify(playerNames)); 

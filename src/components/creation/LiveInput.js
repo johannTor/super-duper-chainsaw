@@ -12,7 +12,7 @@ const LifeSelect = styled.select`
 export default function LiveInput({ setLifeCount }) {
   return (
     <SectionContainer>
-      <SectionHeader>Life per square</SectionHeader>
+      <SectionHeader>Lives per square</SectionHeader>
       <LifeSelect onChange={(ev) => setLifeCount(+ev.target.value)}>
         <option value="2">2</option>
         <option value="3">3</option>

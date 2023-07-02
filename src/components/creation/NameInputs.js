@@ -6,6 +6,10 @@ const InputContainer = styled.section`
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
+  
+  @media only screen and (max-width: 600px) {
+    grid-template-columns: 1fr;
+  }
 `;
 
 const NameInput = styled.input`
@@ -25,7 +29,7 @@ export default function NameInputs({ playerNames, setPlayerNames }) {
     modifiedNames[index] = name;
     setPlayerNames(modifiedNames);
   }
-  // Maybe map over playerNames instead now its an array
+
   return (
     <InputContainer>
       {playerNames.map((item, index) => <NameInput key={`name-${index}`} type="text" value={playerNames[index]} placeholder={`Player ${index + 1}`} maxLength={20} onChange={(ev) => handleNameChange(index, ev.target.value)} />)}
